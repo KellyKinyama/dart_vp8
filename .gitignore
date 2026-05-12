@@ -3,3 +3,6 @@ pubspec.lock
 build/
 *.yuv
 
+*.yuv
+*.nolf.yuv
+

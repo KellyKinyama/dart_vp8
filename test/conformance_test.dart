@@ -72,10 +72,10 @@ void main() {
 
         final yCrop =
             cropPlane(dframe.y, dframe.yStride, dframe.width, dframe.height);
-        final uCrop = cropPlane(
-            dframe.u, dframe.uvStride, dframe.width >> 1, dframe.height >> 1);
-        final vCrop = cropPlane(
-            dframe.v, dframe.uvStride, dframe.width >> 1, dframe.height >> 1);
+        final uvW = (dframe.width + 1) >> 1;
+        final uvH = (dframe.height + 1) >> 1;
+        final uCrop = cropPlane(dframe.u, dframe.uvStride, uvW, uvH);
+        final vCrop = cropPlane(dframe.v, dframe.uvStride, uvW, uvH);
 
         final concat = Uint8List(yCrop.length + uCrop.length + vCrop.length);
         concat.setRange(0, yCrop.length, yCrop);

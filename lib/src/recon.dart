@@ -470,10 +470,30 @@ void _interPredictY16x16({
   required bool useBilinear,
 }) {
   // mv is in 1/8-pel luma units. Integer part = mv >> 3 (arith shift).
-  final int intRow = mv.row >> 3;
-  final int intCol = mv.col >> 3;
+  int intRow = mv.row >> 3;
+  int intCol = mv.col >> 3;
   final int subRow = mv.row & 7;
   final int subCol = mv.col & 7;
+
+  // Clamp integer mv part so the sixtap access region (16+5 = 21 samples,
+  // reaching -2..+18 from the MB top-left) stays inside the bordered ref
+  // buffer. libvpx does the equivalent in vp8_build_inter_predictors_mb via
+  // clamp_mv_to_umv_border_sb. Without this we can underflow into negative
+  // buffer indices for streams with large MVs.
+  final int bufRows = ref.y.length ~/ ref.yStride;
+  // Required range in *buffer* (origin-adjusted) coords:
+  //   row in [yBorder + mbRow*16 + intRow - 2, yBorder + mbRow*16 + intRow + 18]
+  // must fit [0, bufRows - 1].
+  final int rowBase = yBorder + mbRow * 16;
+  final int colBase = yBorder + mbCol * 16;
+  int loRow = -(rowBase - 2);
+  int hiRow = bufRows - 1 - 18 - rowBase;
+  int loCol = -(colBase - 2);
+  int hiCol = ref.yStride - 1 - 18 - colBase;
+  if (intRow < loRow) intRow = loRow;
+  if (intRow > hiRow) intRow = hiRow;
+  if (intCol < loCol) intCol = loCol;
+  if (intCol > hiCol) intCol = hiCol;
 
   // Top-left integer source position in ref Y plane.
   final int srcOff =
@@ -505,10 +525,22 @@ void _interPredictUv8x8({
   required int mbRow,
   required bool useBilinear,
 }) {
-  final int intRow = chromaMvRow >> 3;
-  final int intCol = chromaMvCol >> 3;
+  int intRow = chromaMvRow >> 3;
+  int intCol = chromaMvCol >> 3;
   final int subRow = chromaMvRow & 7;
   final int subCol = chromaMvCol & 7;
+  // Clamp so the 8x8 sixtap access region (reach -2..+10) fits.
+  final int bufRows = refPlane.length ~/ refStride;
+  final int rowBase = uvBorder + mbRow * 8;
+  final int colBase = uvBorder + mbCol * 8;
+  int loRow = -(rowBase - 2);
+  int hiRow = bufRows - 1 - 10 - rowBase;
+  int loCol = -(colBase - 2);
+  int hiCol = refStride - 1 - 10 - colBase;
+  if (intRow < loRow) intRow = loRow;
+  if (intRow > hiRow) intRow = hiRow;
+  if (intCol < loCol) intCol = loCol;
+  if (intCol > hiCol) intCol = hiCol;
   final int srcOff =
       refOrigin + (mbRow * 8 + intRow) * refStride + (mbCol * 8 + intCol);
   if (useBilinear) {
@@ -668,16 +700,28 @@ void _reconstructMbSplitMv({
 
   final int yMbOff = mbRow * 16 * yStride + mbCol * 16;
   // Per-4x4 Y inter predict.
+  final int yBufRows = ref.y.length ~/ ref.yStride;
   for (int b = 0; b < 16; b++) {
     final int br = b >> 2;
     final int bc = b & 3;
     final int packed = mi.bMvs[b];
     final int row = unpackBMvRow(packed);
     final int col = unpackBMvCol(packed);
-    final int intRow = row >> 3;
-    final int intCol = col >> 3;
+    int intRow = row >> 3;
+    int intCol = col >> 3;
     final int subRow = row & 7;
     final int subCol = col & 7;
+    // Clamp so the 4x4 sixtap reach (-2..+6) stays inside the bordered ref.
+    final int rowBase = yBorder + mbRow * 16 + br * 4;
+    final int colBase = yBorder + mbCol * 16 + bc * 4;
+    final int loRow = -(rowBase - 2);
+    final int hiRow = yBufRows - 1 - 6 - rowBase;
+    final int loCol = -(colBase - 2);
+    final int hiCol = ref.yStride - 1 - 6 - colBase;
+    if (intRow < loRow) intRow = loRow;
+    if (intRow > hiRow) intRow = hiRow;
+    if (intCol < loCol) intCol = loCol;
+    if (intCol > hiCol) intCol = hiCol;
     final int srcOff = ref.yOrigin +
         (mbRow * 16 + br * 4 + intRow) * ref.yStride +
         (mbCol * 16 + bc * 4 + intCol);
@@ -719,14 +763,26 @@ void _reconstructMbSplitMv({
     }
     final int uvRow = chromaMvFromLumaSum(sumRow);
     final int uvCol = chromaMvFromLumaSum(sumCol);
-    final int intRow = uvRow >> 3;
-    final int intCol = uvCol >> 3;
+    int intRow = uvRow >> 3;
+    int intCol = uvCol >> 3;
     final int subRow = uvRow & 7;
     final int subCol = uvCol & 7;
     // Chroma block top-left within MB: each quadrant is 4x4 chroma px.
     final int blockRowChromaPx = qr * 4;
     final int blockColChromaPx = qc * 4;
     final int dstOff = uvMbOff + blockRowChromaPx * uvStride + blockColChromaPx;
+    // Clamp the integer mv so the 4x4 sixtap reach (-2..+6) stays inside.
+    final int uvBufRows = ref.u.length ~/ ref.uvStride;
+    final int rowBaseUv = uvBorder + mbRow * 8 + blockRowChromaPx;
+    final int colBaseUv = uvBorder + mbCol * 8 + blockColChromaPx;
+    final int loRowUv = -(rowBaseUv - 2);
+    final int hiRowUv = uvBufRows - 1 - 6 - rowBaseUv;
+    final int loColUv = -(colBaseUv - 2);
+    final int hiColUv = ref.uvStride - 1 - 6 - colBaseUv;
+    if (intRow < loRowUv) intRow = loRowUv;
+    if (intRow > hiRowUv) intRow = hiRowUv;
+    if (intCol < loColUv) intCol = loColUv;
+    if (intCol > hiColUv) intCol = hiColUv;
     final int srcOff = ref.uvOrigin +
         (mbRow * 8 + blockRowChromaPx + intRow) * ref.uvStride +
         (mbCol * 8 + blockColChromaPx + intCol);
