@@ -19,8 +19,7 @@ void main(List<String> args) {
   final mbC = args.length >= 4 ? int.parse(args[3]) : 0;
   final refPath = args.length >= 5 ? args[4] : null;
 
-  final ivf =
-      File('test/fixtures/$name.ivf').readAsBytesSync();
+  final ivf = File('test/fixtures/$name.ivf').readAsBytesSync();
   final reader = IvfReader(Uint8List.fromList(ivf));
   final dec = Vp8Decoder();
   late DecodedFrame d;

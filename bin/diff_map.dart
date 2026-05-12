@@ -17,8 +17,7 @@ void main(List<String> args) {
   final frameIdx = args.length >= 2 ? int.parse(args[1]) : 1;
   final refPath = args[2];
 
-  final ivf =
-      File('test/fixtures/$name.ivf').readAsBytesSync();
+  final ivf = File('test/fixtures/$name.ivf').readAsBytesSync();
   final reader = IvfReader(Uint8List.fromList(ivf));
   final dec = Vp8Decoder();
   late DecodedFrame d;

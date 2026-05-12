@@ -219,7 +219,7 @@ class Vp8Decoder {
             eCtx.left[k] = 0;
           }
         } else {
-          decodeMbTokens(
+          final int eobTotal = decodeMbTokens(
             bc: tokBc,
             coefProbs: coefProbs,
             is4x4: mb.is4x4,
@@ -235,6 +235,14 @@ class Vp8Decoder {
             if (eobs[i] > m) m = eobs[i];
           }
           mb.eobMax = m;
+          // libvpx: when token decode yields no real coefficients on a
+          // non-B_PRED / non-SPLITMV MB, force mb_skip_coeff=1 so the
+          // loop filter treats it as skipped (suppresses inner-edge LF).
+          // The check uses eob_total (which accounts for skip_dc on Y AC
+          // blocks), not max(eobs).
+          if (eobTotal == 0 && !mb.is4x4) {
+            mb.skipCoeff = true;
+          }
         }
 
         // Save updated above context back to the row.

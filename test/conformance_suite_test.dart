@@ -79,8 +79,7 @@ void runOne(String name) {
       frameIdx++;
     }
     expect(frameIdx, expected.length,
-        reason:
-            '$name: decoded $frameIdx frames, expected ${expected.length}');
+        reason: '$name: decoded $frameIdx frames, expected ${expected.length}');
   });
 }
 

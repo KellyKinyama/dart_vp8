@@ -19,9 +19,7 @@ void main(List<String> args) {
   final refPath = args.length >= 3 ? args[2] : null;
   final ivfPath = 'test/fixtures/$name.ivf';
   final md5Path = '$ivfPath.md5';
-  final ref = refPath != null
-      ? File(refPath).readAsBytesSync()
-      : Uint8List(0);
+  final ref = refPath != null ? File(refPath).readAsBytesSync() : Uint8List(0);
   int refOff = 0;
 
   final ivf = File(ivfPath).readAsBytesSync();
@@ -66,13 +64,22 @@ void main(List<String> args) {
       final uvLen = uvW * uvH;
       int firstYDiff = -1, firstUDiff = -1, firstVDiff = -1;
       for (int k = 0; k < yLen; k++) {
-        if (y[k] != ref[refOff + k]) { firstYDiff = k; break; }
+        if (y[k] != ref[refOff + k]) {
+          firstYDiff = k;
+          break;
+        }
       }
       for (int k = 0; k < uvLen; k++) {
-        if (u[k] != ref[refOff + yLen + k]) { firstUDiff = k; break; }
+        if (u[k] != ref[refOff + yLen + k]) {
+          firstUDiff = k;
+          break;
+        }
       }
       for (int k = 0; k < uvLen; k++) {
-        if (v[k] != ref[refOff + yLen + uvLen + k]) { firstVDiff = k; break; }
+        if (v[k] != ref[refOff + yLen + uvLen + k]) {
+          firstVDiff = k;
+          break;
+        }
       }
       if (firstYDiff >= 0) {
         final r = firstYDiff ~/ d.width, c = firstYDiff % d.width;
