@@ -1,0 +1,12 @@
+name: dart_vp8
+description: Pure-Dart VP8 video decoder (RFC 6386). Correctness-focused, no SIMD.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0
+  crypto: ^3.0.3
