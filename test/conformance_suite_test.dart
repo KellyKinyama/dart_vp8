@@ -58,6 +58,10 @@ void runOne(String name) {
       final f = reader.nextFrame();
       if (f == null) break;
       final dframe = dec.decode(f);
+      // libvpx's vpxdec drops invisible (show_frame=0) frames from the I420
+      // output stream; the reference .md5 sidecar likewise only lists shown
+      // frames, so skip them here too.
+      if (!dframe.isShown) continue;
 
       final yCrop =
           cropPlane(dframe.y, dframe.yStride, dframe.width, dframe.height);

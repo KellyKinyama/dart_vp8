@@ -42,6 +42,10 @@ void main(List<String> args) {
     final f = reader.nextFrame();
     if (f == null) break;
     final d = dec.decode(f);
+    if (!d.isShown) {
+      i--; // don't advance frameIdx for hidden frames
+      continue;
+    }
     final y = cropPlane(d.y, d.yStride, d.width, d.height);
     final uvW = (d.width + 1) >> 1;
     final uvH = (d.height + 1) >> 1;

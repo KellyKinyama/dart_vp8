@@ -32,6 +32,7 @@ class DecodedFrame {
     required this.u,
     required this.v,
     required this.isKeyFrame,
+    required this.isShown,
   });
 
   final int width;
@@ -42,6 +43,10 @@ class DecodedFrame {
   final Uint8List u;
   final Uint8List v;
   final bool isKeyFrame;
+  /// VP8 show_frame flag. When false the frame is decoded (and may update
+  /// reference buffers) but should not be presented; libvpx's vpxdec drops
+  /// these from the I420 output stream.
+  final bool isShown;
 }
 
 /// VP8 decoder. A single instance can decode a stream of frames in order;
@@ -333,6 +338,7 @@ class Vp8Decoder {
       u: _u,
       v: _v,
       isKeyFrame: header.isKeyFrame,
+      isShown: header.showFrame,
     );
   }
 

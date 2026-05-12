@@ -69,6 +69,7 @@ void main() {
         final f = reader.nextFrame();
         if (f == null) break;
         final dframe = dec.decode(f);
+        if (!dframe.isShown) continue;
 
         final yCrop =
             cropPlane(dframe.y, dframe.yStride, dframe.width, dframe.height);
