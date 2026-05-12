@@ -174,7 +174,11 @@ class EntropyState {
         uvModeProb = Uint8List.fromList(defaultUvModeProb),
         mvContext = Uint8List.fromList(defaultMvContext),
         lfRefDeltas = Int8List(maxRefLfDeltas),
-        lfModeDeltas = Int8List(maxModeLfDeltas);
+        lfModeDeltas = Int8List(maxModeLfDeltas),
+        segFeatureData = <Int8List>[
+          Int8List(maxMbSegments),
+          Int8List(maxMbSegments),
+        ];
 
   final Uint8List coefProbs;
   final Uint8List yModeProb;
@@ -184,6 +188,11 @@ class EntropyState {
   // when a frame's mode_ref_lf_delta_update flag is set).
   final Int8List lfRefDeltas;
   final Int8List lfModeDeltas;
+  // Persistent segmentation feature data + abs/delta flag (carried across
+  // frames; updated only when a frame's update_segment_feature_data flag
+  // is set, matching libvpx's xd->mb_segment_abs_delta / segment_feature_data).
+  bool segAbsDelta = false;
+  final List<Int8List> segFeatureData;
 
   /// Reset to VP8 defaults (used at keyframes).
   void resetToDefaults() {
@@ -193,6 +202,12 @@ class EntropyState {
     mvContext.setAll(0, defaultMvContext);
     for (int i = 0; i < lfRefDeltas.length; i++) lfRefDeltas[i] = 0;
     for (int i = 0; i < lfModeDeltas.length; i++) lfModeDeltas[i] = 0;
+    segAbsDelta = false;
+    for (int i = 0; i < segFeatureData.length; i++) {
+      for (int j = 0; j < segFeatureData[i].length; j++) {
+        segFeatureData[i][j] = 0;
+      }
+    }
   }
 
   /// Copy the (already-updated) entropy from a just-parsed frame header
@@ -210,6 +225,16 @@ class EntropyState {
   void commitLfFrom(FrameHeader h) {
     lfRefDeltas.setAll(0, h.loopFilter.refDeltas);
     lfModeDeltas.setAll(0, h.loopFilter.modeDeltas);
+  }
+
+  /// Copy segmentation feature data + absDelta from a just-parsed frame.
+  /// In libvpx these live on MACROBLOCKD and persist across frames; they
+  /// are replaced only when the frame carries update_segment_feature_data.
+  void commitSegFrom(FrameHeader h) {
+    segAbsDelta = h.segmentation.absDelta;
+    for (int i = 0; i < segFeatureData.length; i++) {
+      segFeatureData[i].setAll(0, h.segmentation.featureData[i]);
+    }
   }
 }
 
@@ -278,6 +303,15 @@ FrameHeader parseFrameHeader(Uint8List frame, {EntropyState? priorState}) {
 
   // --- Segmentation ------------------------------------------------------
   final seg = h.segmentation;
+  // Inherit persistent segmentation state (abs/delta flag + per-feature data)
+  // from the prior frame so that an enabled-but-not-updated segmentation
+  // header reuses last frame's values. libvpx keeps these on MACROBLOCKD.
+  if (priorState != null && !h.isKeyFrame) {
+    seg.absDelta = priorState.segAbsDelta;
+    for (int i = 0; i < seg.featureData.length; i++) {
+      seg.featureData[i].setAll(0, priorState.segFeatureData[i]);
+    }
+  }
   seg.enabled = bc.read(128) != 0;
   if (seg.enabled) {
     seg.updateMap = bc.read(128) != 0;

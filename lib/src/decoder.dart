@@ -317,6 +317,10 @@ class Vp8Decoder {
       // LF deltas always persist across frames (libvpx semantics).
       _entropy.commitLfFrom(header);
     }
+    // Segmentation feature data + absDelta also persist across frames; the
+    // values just parsed (or inherited from the prior state if not updated)
+    // become the new persistent record.
+    _entropy.commitSegFrom(header);
 
     _frameCounter++;
 
