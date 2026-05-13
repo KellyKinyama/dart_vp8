@@ -88,10 +88,51 @@ void runOne(String name) {
 }
 
 void main() {
-  group('VP8 conformance: vp80-00-comprehensive suite', () {
+  group('VP8 conformance: vp80-00-comprehensive', () {
     for (int i = 1; i <= 18; i++) {
-      final id = i.toString().padLeft(3, '0');
-      runOne('vp80-00-comprehensive-$id');
+      runOne('vp80-00-comprehensive-${i.toString().padLeft(3, '0')}');
     }
+  });
+
+  group('VP8 conformance: vp80-01-intra', () {
+    for (final n in const [1400, 1411, 1416, 1417]) {
+      runOne('vp80-01-intra-$n');
+    }
+  });
+
+  group('VP8 conformance: vp80-02-inter', () {
+    for (final n in const [1402, 1412, 1418, 1424]) {
+      runOne('vp80-02-inter-$n');
+    }
+  });
+
+  group('VP8 conformance: vp80-03-segmentation', () {
+    for (final n in const [
+      '01', '02', '03', '04',
+      '1401', '1403', '1407', '1408', '1409', '1410',
+      '1413', '1414', '1415', '1425', '1426', '1427',
+      '1432', '1435', '1436', '1437', '1441', '1442',
+    ]) {
+      runOne('vp80-03-segmentation-$n');
+    }
+  });
+
+  group('VP8 conformance: vp80-04-partitions', () {
+    for (final n in const [1404, 1405, 1406]) {
+      runOne('vp80-04-partitions-$n');
+    }
+  });
+
+  group('VP8 conformance: vp80-05-sharpness', () {
+    for (final n in const [
+      1428, 1429, 1430, 1431, 1433, 1434,
+      1438, 1439, 1440, 1443,
+    ]) {
+      runOne('vp80-05-sharpness-$n');
+    }
+  });
+
+  group('VP8 conformance: vp80-06-smallsize', () {
+    runOne('vp80-06-smallsize');
   });
 }
