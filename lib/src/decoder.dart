@@ -43,6 +43,7 @@ class DecodedFrame {
   final Uint8List u;
   final Uint8List v;
   final bool isKeyFrame;
+
   /// VP8 show_frame flag. When false the frame is decoded (and may update
   /// reference buffers) but should not be presented; libvpx's vpxdec drops
   /// these from the I420 output stream.
@@ -296,6 +297,7 @@ class Vp8Decoder {
             yStride: _yStride,
             uvStride: _uvStride,
             useBilinear: header.version != 0,
+            useFullPixel: header.version == 3,
           );
         }
       }

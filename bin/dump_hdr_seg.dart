@@ -20,8 +20,10 @@ void main(List<String> args) {
           'uvDc=${hdr.quantizer.uvDcDelta} uvAc=${hdr.quantizer.uvAcDelta}');
       print(' seg.enabled=${hdr.segmentation.enabled} '
           'absDelta=${hdr.segmentation.absDelta}');
-      print(' seg.featureData[altQ]=${hdr.segmentation.featureData[MbLvl.altQ]}');
-      print(' seg.featureData[altLf]=${hdr.segmentation.featureData[MbLvl.altLf]}');
+      print(
+          ' seg.featureData[altQ]=${hdr.segmentation.featureData[MbLvl.altQ]}');
+      print(
+          ' seg.featureData[altLf]=${hdr.segmentation.featureData[MbLvl.altLf]}');
       print(' lf=${hdr.loopFilter.level} type=${hdr.loopFilter.type}');
     }
   }

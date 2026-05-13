@@ -569,6 +569,9 @@ void reconstructMbInter({
   required int yStride,
   required int uvStride,
   required bool useBilinear,
+  /// VP8 version=3 sets `xd->fullpixel_mask = ~7`, which masks the chroma
+  /// motion vector to a multiple of 8 (full-pixel only) after derivation.
+  required bool useFullPixel,
 }) {
   if (mi.yMode == splitMv) {
     _reconstructMbSplitMv(
@@ -585,6 +588,7 @@ void reconstructMbInter({
       yStride: yStride,
       uvStride: uvStride,
       useBilinear: useBilinear,
+      useFullPixel: useFullPixel,
     );
     return;
   }
@@ -620,8 +624,14 @@ void reconstructMbInter({
 
   // 4. Chroma MV: collapse 4 luma sub-MVs (which are all equal to mi.mv
   //    for non-split modes) per the libvpx (sum ± 4)/8 rule.
-  final int chromaMvRow = chromaMvFromLumaSum(4 * mi.mv.row);
-  final int chromaMvCol = chromaMvFromLumaSum(4 * mi.mv.col);
+  int chromaMvRow = chromaMvFromLumaSum(4 * mi.mv.row);
+  int chromaMvCol = chromaMvFromLumaSum(4 * mi.mv.col);
+  if (useFullPixel) {
+    // Full-pixel mode (version=3): drop the sub-pel bits, matching
+    // `& xd->fullpixel_mask` (`& ~7`) in vp8/common/reconinter.c.
+    chromaMvRow &= ~7;
+    chromaMvCol &= ~7;
+  }
 
   final int uvMbOff = mbRow * 8 * uvStride + mbCol * 8;
 
@@ -687,6 +697,7 @@ void _reconstructMbSplitMv({
   required int yStride,
   required int uvStride,
   required bool useBilinear,
+  required bool useFullPixel,
 }) {
   // SPLITMV is4x4 -> per-block AC/DC dequant for all 16 Y blocks (no Y2).
   if (!mi.skipCoeff) {
@@ -761,8 +772,10 @@ void _reconstructMbSplitMv({
         sumCol += unpackBMvCol(packed);
       }
     }
-    final int uvRow = chromaMvFromLumaSum(sumRow);
-    final int uvCol = chromaMvFromLumaSum(sumCol);
+    final int uvRow0 = chromaMvFromLumaSum(sumRow);
+    final int uvCol0 = chromaMvFromLumaSum(sumCol);
+    final int uvRow = useFullPixel ? (uvRow0 & ~7) : uvRow0;
+    final int uvCol = useFullPixel ? (uvCol0 & ~7) : uvCol0;
     int intRow = uvRow >> 3;
     int intCol = uvCol >> 3;
     final int subRow = uvRow & 7;
