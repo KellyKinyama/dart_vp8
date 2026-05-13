@@ -33,17 +33,25 @@ void main() {
 
     test('rejects header_len < 32', () {
       final b = Uint8List(32);
-      b[0] = 0x44; b[1] = 0x4B; b[2] = 0x49; b[3] = 0x46; // DKIF
+      b[0] = 0x44;
+      b[1] = 0x4B;
+      b[2] = 0x49;
+      b[3] = 0x46; // DKIF
       // header_len=8 at offset 6 (little-endian u16)
-      b[6] = 8; b[7] = 0;
+      b[6] = 8;
+      b[7] = 0;
       expect(() => IvfReader(b), throwsFormatException);
     });
 
     test('rejects truncated frame header', () {
       // Build a valid file header plus 5 bytes of frame data.
       final fh = Uint8List(32);
-      fh[0] = 0x44; fh[1] = 0x4B; fh[2] = 0x49; fh[3] = 0x46;
-      fh[6] = 32; fh[7] = 0;
+      fh[0] = 0x44;
+      fh[1] = 0x4B;
+      fh[2] = 0x49;
+      fh[3] = 0x46;
+      fh[6] = 32;
+      fh[7] = 0;
       final b = Uint8List(37)..setRange(0, 32, fh);
       final r = IvfReader(b);
       expect(r.nextFrame, throwsFormatException);
@@ -51,12 +59,19 @@ void main() {
 
     test('rejects insanely large frame size', () {
       final fh = Uint8List(32);
-      fh[0] = 0x44; fh[1] = 0x4B; fh[2] = 0x49; fh[3] = 0x46;
-      fh[6] = 32; fh[7] = 0;
+      fh[0] = 0x44;
+      fh[1] = 0x4B;
+      fh[2] = 0x49;
+      fh[3] = 0x46;
+      fh[6] = 32;
+      fh[7] = 0;
       final b = Uint8List(32 + 12);
       b.setRange(0, 32, fh);
       // size = 0xFFFFFFFF
-      b[32] = 0xFF; b[33] = 0xFF; b[34] = 0xFF; b[35] = 0xFF;
+      b[32] = 0xFF;
+      b[33] = 0xFF;
+      b[34] = 0xFF;
+      b[35] = 0xFF;
       final r = IvfReader(b);
       expect(r.nextFrame, throwsFormatException);
     });
@@ -86,9 +101,13 @@ void main() {
       b[1] = 0;
       b[2] = 0;
       // bogus sync
-      b[3] = 0x00; b[4] = 0x00; b[5] = 0x00;
-      b[6] = 0x10; b[7] = 0x00; // width=16
-      b[8] = 0x10; b[9] = 0x00; // height=16
+      b[3] = 0x00;
+      b[4] = 0x00;
+      b[5] = 0x00;
+      b[6] = 0x10;
+      b[7] = 0x00; // width=16
+      b[8] = 0x10;
+      b[9] = 0x00; // height=16
       final dec = Vp8Decoder();
       expect(() => dec.decode(IvfFrame(0, b)), throwsFormatException);
     });
@@ -116,8 +135,13 @@ void main() {
       b[0] = ((size << 5) & 0xff);
       b[1] = ((size >> 3) & 0xff);
       b[2] = ((size >> 11) & 0xff);
-      b[3] = 0x9D; b[4] = 0x01; b[5] = 0x2A; // sync
-      b[6] = 0x10; b[7] = 0x00; b[8] = 0x10; b[9] = 0x00;
+      b[3] = 0x9D;
+      b[4] = 0x01;
+      b[5] = 0x2A; // sync
+      b[6] = 0x10;
+      b[7] = 0x00;
+      b[8] = 0x10;
+      b[9] = 0x00;
       final dec = Vp8Decoder();
       expect(() => dec.decode(IvfFrame(0, b)), throwsFormatException);
     });

@@ -116,8 +116,12 @@ class Vp8Decoder {
   /// reconstructed frame; the returned buffers are aliased with the
   /// decoder's internal state and will be overwritten by the next call to
   /// [decode].
-  DecodedFrame decode(IvfFrame frame) {
-    final Uint8List data = frame.data;
+  DecodedFrame decode(IvfFrame frame) => decodeBytes(frame.data);
+
+  /// Decode one raw VP8 frame payload (the bytes between container
+  /// boundaries — i.e. the contents of an IVF frame, a WebM SimpleBlock
+  /// payload, etc.). Same return-buffer aliasing rules as [decode].
+  DecodedFrame decodeBytes(Uint8List data) {
     final FrameHeader header = parseFrameHeader(data, priorState: _entropy);
 
     // On a keyframe always (re-)allocate buffers; an inter frame must

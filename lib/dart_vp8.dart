@@ -5,6 +5,9 @@
 library;
 
 export 'src/ivf_reader.dart';
+export 'src/ebml.dart';
+export 'src/webm_reader.dart';
+export 'src/vp8_reader.dart';
 export 'src/bool_decoder.dart';
 export 'src/frame_header.dart';
 export 'src/quant.dart';
