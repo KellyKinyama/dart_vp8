@@ -459,8 +459,8 @@ List<ModeInfo> decodeInterFrameModeInfo(
               );
               // mbmi.mv = bMvs[15]
               final int packed15 = mi.bMvs[15];
-              mi.mv.row = (packed15 >> 16);
-              mi.mv.col = (packed15 << 16) >> 16;
+              mi.mv.row = unpackBMvRow(packed15);
+              mi.mv.col = unpackBMvCol(packed15);
             } else {
               // NEWMV.
               mi.yMode = newMv;
