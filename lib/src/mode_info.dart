@@ -232,8 +232,6 @@ List<ModeInfo> decodeKeyframeModeInfo(FrameHeader header,
 /// = INTRA, mv = 0, yMode = DC. Read-only.
 final ModeInfo _offFrameMi = ModeInfo()..refFrame = refIntra;
 
-bool debugDumpBcRow5 = false;
-
 /// 4-element neighbour count buffer used by find_near_mvs.
 /// Indices match libvpx: CNT_INTRA, CNT_NEAREST, CNT_NEAR, CNT_SPLITMV.
 const int _cntIntra = 0;

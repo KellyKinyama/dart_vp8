@@ -4,7 +4,6 @@
 // frame management, inter-prediction wiring and mode-delta loop-filter
 // handling all live here.
 
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'bool_decoder.dart';
@@ -90,7 +89,6 @@ class Vp8Decoder {
   void Function(int globalMbIdx, Int16List qcoeff, Uint8List eobs, ModeInfo mb,
       DequantSet dq)? debugPerMbHook;
   int _globalMbIdx = 0;
-  int _frameCounter = 0;
 
   /// The per-MB ModeInfo list from the most recently decoded frame, in
   /// row-major raster order. Length = `_mbCols * _mbRows`. Exposed for
@@ -352,8 +350,6 @@ class Vp8Decoder {
     // become the new persistent record.
     _entropy.commitSegFrom(header);
 
-    _frameCounter++;
-
     return DecodedFrame(
       width: _width,
       height: _height,
@@ -505,29 +501,6 @@ class Vp8Decoder {
     final int frameType = header.isKeyFrame ? frameKey : frameInter;
     final bool simple = lf.type != 0;
 
-    // Debug: dump LF stages for one (frame_idx, mb_row, mb_col).
-    final dbg = Platform.environment['VPX_DUMP_LF_MB'] ?? '';
-    int? dbgFrame, dbgRow, dbgCol;
-    if (dbg.isNotEmpty) {
-      final parts = dbg.split(',');
-      if (parts.length == 3) {
-        dbgFrame = int.parse(parts[0]);
-        dbgRow = int.parse(parts[1]);
-        dbgCol = int.parse(parts[2]);
-      }
-    }
-    void _dumpY(String label, int r, int c) {
-      final yOff = r * 16 * _yStride + c * 16;
-      stderr.writeln('LF mb=($r,$c) $label:');
-      for (int rr = 0; rr < 16; rr++) {
-        final row = <int>[];
-        for (int cc = 0; cc < 16; cc++) {
-          row.add(_y[yOff + rr * _yStride + cc]);
-        }
-        stderr.writeln('  r${rr.toString().padLeft(2)}: ${row.join(' ')}');
-      }
-    }
-
     for (int r = 0; r < _mbRows; r++) {
       for (int c = 0; c < _mbCols; c++) {
         final mb = mi[r * _mbCols + c];
@@ -539,14 +512,6 @@ class Vp8Decoder {
         final int yOff = r * 16 * _yStride + c * 16;
         final int uvOff = r * 8 * _uvStride + c * 8;
 
-        final bool dump =
-            dbgFrame == _frameCounter && dbgRow == r && dbgCol == c;
-        if (dump) {
-          stderr.writeln(
-              'LF mb=($r,$c) fl=$level mblim=${info.mblim} blim=${info.blim} lim=${info.lim} hev=${info.hevThr} BEFORE:');
-          _dumpY('BEFORE', r, c);
-        }
-
         if (simple) {
           if (c > 0) {
             loopFilterSimpleVerticalEdge(_y, yOff, _yStride, info.mblim);
@@ -555,14 +520,12 @@ class Vp8Decoder {
           if (mb.is4x4 || !mb.skipCoeff) {
             loopFilterBvs(_y, yOff, _yStride, info.blim);
           }
-          if (dump) _dumpY('AFTER V-pass', r, c);
           if (r > 0) {
             loopFilterSimpleHorizontalEdge(_y, yOff, _yStride, info.mblim);
           }
           if (mb.is4x4 || !mb.skipCoeff) {
             loopFilterBhs(_y, yOff, _yStride, info.blim);
           }
-          if (dump) _dumpY('AFTER H-pass', r, c);
         } else {
           if (c > 0) {
             loopFilterMbv(
@@ -572,7 +535,6 @@ class Vp8Decoder {
             loopFilterBv(
                 _y, yOff, _yStride, _u, uvOff, _v, uvOff, _uvStride, info);
           }
-          if (dump) _dumpY('AFTER V-pass', r, c);
           if (r > 0) {
             loopFilterMbh(
                 _y, yOff, _yStride, _u, uvOff, _v, uvOff, _uvStride, info);
@@ -581,7 +543,6 @@ class Vp8Decoder {
             loopFilterBh(
                 _y, yOff, _yStride, _u, uvOff, _v, uvOff, _uvStride, info);
           }
-          if (dump) _dumpY('AFTER H-pass', r, c);
         }
       }
     }
