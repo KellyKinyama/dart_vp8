@@ -117,7 +117,13 @@ int _leftBmode(int b, ModeInfo cur, ModeInfo? leftMode, List<int> leftBmodes) {
 /// Decode all mode_info entries for a keyframe. Returns an mb_rows x
 /// mb_cols list (row-major). Mutates the first partition's boolean
 /// decoder in [header].
-List<ModeInfo> decodeKeyframeModeInfo(FrameHeader header) {
+///
+/// [prevSegIds] is the previous frame's per-MB segmentation map. When
+/// segmentation is enabled but `update_mb_segmentation_map` is 0, libvpx
+/// re-uses the previous frame's MB seg ids (the MODE_INFO array persists).
+/// Pass null on the very first frame (libvpx zero-inits the map).
+List<ModeInfo> decodeKeyframeModeInfo(FrameHeader header,
+    {Uint8List? prevSegIds}) {
   if (!header.isKeyFrame) {
     throw StateError('decodeKeyframeModeInfo called on non-keyframe');
   }
@@ -156,6 +162,8 @@ List<ModeInfo> decodeKeyframeModeInfo(FrameHeader header) {
       // Segment id.
       if (segUpdateMap) {
         mi.segmentId = treeDecode(bc, mbFeatureTree, segTreeProbs);
+      } else if (prevSegIds != null) {
+        mi.segmentId = prevSegIds[r * mbCols + c];
       }
 
       // Skip-coeff flag.
@@ -318,6 +326,7 @@ List<ModeInfo> decodeInterFrameModeInfo(
   List<bool> refFrameSignBias, {
   required int mbCols,
   required int mbRows,
+  Uint8List? prevSegIds,
 }) {
   if (header.isKeyFrame) {
     throw StateError('decodeInterFrameModeInfo called on key frame');
@@ -359,6 +368,8 @@ List<ModeInfo> decodeInterFrameModeInfo(
         } else {
           mi.segmentId = bc.read(segTreeProbs[1]);
         }
+      } else if (prevSegIds != null) {
+        mi.segmentId = prevSegIds[r * mbCols + c];
       }
 
       if (skipFlagInUse) {
@@ -542,9 +553,8 @@ void _decodeSplitMv({
     int leftMvPacked;
     if ((k & 3) == 0) {
       if (left.yMode != splitMv) {
-        leftMvPacked =
-            (((left.mv.row & 0xffff) << 16) | (left.mv.col & 0xffff))
-                .toSigned(32);
+        leftMvPacked = (((left.mv.row & 0xffff) << 16) | (left.mv.col & 0xffff))
+            .toSigned(32);
       } else {
         // Block (k + 3) of left MB.
         leftMvPacked = left.bMvs[k + 4 - 1];

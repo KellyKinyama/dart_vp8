@@ -98,6 +98,11 @@ class Vp8Decoder {
   List<ModeInfo> get debugLastModeInfo => _debugMi ?? const <ModeInfo>[];
   List<ModeInfo>? _debugMi;
 
+  // Persistent per-MB segmentation map. libvpx keeps the MODE_INFO array
+  // across frames; when `update_mb_segmentation_map` is 0, the segment_id
+  // of each MB is inherited from the previous frame.
+  Uint8List? _prevSegIds;
+
   /// Macroblock columns / rows of the currently-allocated buffers.
   int get debugMbCols => _mbCols;
   int get debugMbRows => _mbRows;
@@ -145,10 +150,17 @@ class Vp8Decoder {
 
     // Phase 1: decode mode_info entries (first partition).
     final List<ModeInfo> mi = header.isKeyFrame
-        ? decodeKeyframeModeInfo(header)
+        ? decodeKeyframeModeInfo(header, prevSegIds: _prevSegIds)
         : decodeInterFrameModeInfo(header, _refSignBias,
-            mbCols: _mbCols, mbRows: _mbRows);
+            mbCols: _mbCols, mbRows: _mbRows, prevSegIds: _prevSegIds);
     _debugMi = mi;
+    // Snapshot seg ids for the next frame.
+    if (_prevSegIds == null || _prevSegIds!.length != mi.length) {
+      _prevSegIds = Uint8List(mi.length);
+    }
+    for (int i = 0; i < mi.length; i++) {
+      _prevSegIds![i] = mi[i].segmentId;
+    }
     _debugFilterLevel = Int32List(mi.length);
 
     // Phase 2: open the residual (token) partitions. For numParts > 1,
