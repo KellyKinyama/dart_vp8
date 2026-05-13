@@ -74,6 +74,7 @@ void main() {
         yStride: 16,
         uvStride: 8,
         useBilinear: false,
+        useFullPixel: false,
       );
 
       for (final v in yPlane) {
@@ -151,6 +152,7 @@ void main() {
         yStride: 16,
         uvStride: 8,
         useBilinear: false,
+        useFullPixel: false,
       );
 
       for (final v in yPlane) {
@@ -215,6 +217,7 @@ void main() {
         yStride: 16,
         uvStride: 8,
         useBilinear: true,
+        useFullPixel: false,
       );
 
       for (final v in yPlane) {

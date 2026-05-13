@@ -64,6 +64,7 @@ void main() {
         yStride: 16,
         uvStride: 8,
         useBilinear: false,
+        useFullPixel: false,
       );
 
       for (final v in yPlane) {
@@ -140,6 +141,7 @@ void main() {
         yStride: yStride,
         uvStride: uvStride,
         useBilinear: false,
+        useFullPixel: false,
       );
 
       // MB at (0,0) with row-MV +1 should reproduce src rows 1..16 in
@@ -211,6 +213,7 @@ void main() {
         yStride: 16,
         uvStride: 8,
         useBilinear: false,
+        useFullPixel: false,
       );
 
       // Every pixel must be a valid byte. The plane should be uniform
