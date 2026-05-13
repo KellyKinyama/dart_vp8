@@ -224,6 +224,8 @@ List<ModeInfo> decodeKeyframeModeInfo(FrameHeader header) {
 /// = INTRA, mv = 0, yMode = DC. Read-only.
 final ModeInfo _offFrameMi = ModeInfo()..refFrame = refIntra;
 
+bool debugDumpBcRow5 = false;
+
 /// 4-element neighbour count buffer used by find_near_mvs.
 /// Indices match libvpx: CNT_INTRA, CNT_NEAREST, CNT_NEAR, CNT_SPLITMV.
 const int _cntIntra = 0;
@@ -501,7 +503,8 @@ List<ModeInfo> decodeInterFrameModeInfo(
 }
 
 void _fillBMvsFromMb(ModeInfo mi) {
-  final int packed = ((mi.mv.row & 0xffff) << 16) | (mi.mv.col & 0xffff);
+  final int packed =
+      (((mi.mv.row & 0xffff) << 16) | (mi.mv.col & 0xffff)).toSigned(32);
   for (int i = 0; i < 16; i++) {
     mi.bMvs[i] = packed;
   }
@@ -539,7 +542,9 @@ void _decodeSplitMv({
     int leftMvPacked;
     if ((k & 3) == 0) {
       if (left.yMode != splitMv) {
-        leftMvPacked = ((left.mv.row & 0xffff) << 16) | (left.mv.col & 0xffff);
+        leftMvPacked =
+            (((left.mv.row & 0xffff) << 16) | (left.mv.col & 0xffff))
+                .toSigned(32);
       } else {
         // Block (k + 3) of left MB.
         leftMvPacked = left.bMvs[k + 4 - 1];
@@ -553,7 +558,8 @@ void _decodeSplitMv({
     if ((k >> 2) == 0) {
       if (above.yMode != splitMv) {
         aboveMvPacked =
-            ((above.mv.row & 0xffff) << 16) | (above.mv.col & 0xffff);
+            (((above.mv.row & 0xffff) << 16) | (above.mv.col & 0xffff))
+                .toSigned(32);
       } else {
         aboveMvPacked = above.bMvs[k + 16 - 4];
       }
@@ -575,7 +581,7 @@ void _decodeSplitMv({
           final int col = readMvComponent(bc, mvc, mvpCount) * 2 + bestMv.col;
           // Note: per-block MV is NOT clamped (matches libvpx's
           // need_to_clamp_mvs flag which only sets a check bit).
-          blockPacked = ((row & 0xffff) << 16) | (col & 0xffff);
+          blockPacked = (((row & 0xffff) << 16) | (col & 0xffff)).toSigned(32);
         } else {
           // ZERO4X4.
           blockPacked = 0;

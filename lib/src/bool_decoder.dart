@@ -13,7 +13,9 @@ import 'dart:typed_data';
 class BoolDecoder {
   /// Initialize over [buffer]. Reads the first two bytes immediately, matching
   /// `InitBoolDecoder` in RFC 6386 §7.
-  BoolDecoder(Uint8List buffer) : _buf = buffer, _bufLen = buffer.length {
+  BoolDecoder(Uint8List buffer)
+      : _buf = buffer,
+        _bufLen = buffer.length {
     if (_bufLen >= 1) {
       _value = _buf[0] << 8;
       _bufPos = 1;
@@ -108,8 +110,13 @@ class BoolDecoder {
   int get debugRange => _range;
   int get debugBitCount => _bitCount;
   int get debugBufPos => _bufPos;
-  List<int> debugSnapshot() => [_value, _range, _bitCount, _bufPos, _error ? 1 : 0];
+  List<int> debugSnapshot() =>
+      [_value, _range, _bitCount, _bufPos, _error ? 1 : 0];
   void debugRestore(List<int> s) {
-    _value = s[0]; _range = s[1]; _bitCount = s[2]; _bufPos = s[3]; _error = s[4] != 0;
+    _value = s[0];
+    _range = s[1];
+    _bitCount = s[2];
+    _bufPos = s[3];
+    _error = s[4] != 0;
   }
 }

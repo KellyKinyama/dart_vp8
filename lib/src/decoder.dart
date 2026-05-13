@@ -225,22 +225,6 @@ class Vp8Decoder {
             eCtx.left[k] = 0;
           }
         } else {
-          // DEBUG: dump bool state + next 64 bits at start of MB token decode.
-          final int dbgMb = int.tryParse(
-                  Platform.environment['DART_DUMP_BD'] ?? '') ??
-              -1;
-          if (dbgMb == _globalMbIdx) {
-            final snap = tokBc.debugSnapshot();
-            final sb = StringBuffer();
-            for (int i = 0; i < 64; i++) {
-              sb.write(tokBc.read(128));
-            }
-            tokBc.debugRestore(snap);
-            stderr.writeln('DBD pre mb=$_globalMbIdx value=${snap[0]} '
-                'range=${snap[1]} bitCount=${snap[2]} bufPos=${snap[3]} '
-                'nextbits=$sb');
-          }
-          debugTraceTokens = (dbgMb == _globalMbIdx);
           final int eobTotal = decodeMbTokens(
             bc: tokBc,
             coefProbs: coefProbs,
@@ -249,7 +233,6 @@ class Vp8Decoder {
             qcoeff: qcoeff,
             eobs: eobs,
           );
-          debugTraceTokens = false;
           // at index 24 only when !is4x4 (the MB uses the 2nd-stage WHT).
           int m = 0;
           final int last = mb.is4x4 ? 24 : 25;

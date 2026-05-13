@@ -243,7 +243,8 @@ int decodeMbTokens({
     final int lIdx = (i & 0xc) >> 2;
     final int ctx = above[aIdx] + left[lIdx];
     if (debugTraceTokens) {
-      print('  Y$i ctx=$ctx (above[$aIdx]=${above[aIdx]} left[$lIdx]=${left[lIdx]}) bd=${bc.debugSnapshot()} prob[3][0][$ctx][0]=${coefProbs[coefProbIndex(3, 0, ctx, 0)]}');
+      print(
+          '  Y$i ctx=$ctx (above[$aIdx]=${above[aIdx]} left[$lIdx]=${left[lIdx]}) bd=${bc.debugSnapshot()} prob[3][0][$ctx][0]=${coefProbs[coefProbIndex(3, 0, ctx, 0)]}');
     }
     final int nz = _decodeBlockCoeffs(
       bc,
