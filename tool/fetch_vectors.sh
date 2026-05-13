@@ -40,4 +40,11 @@ for v in "${VECTORS[@]}"; do
     curl -fsSL "$URL/$f" -o "$f" || { echo "FAIL $f"; rm -f "$f"; }
   done
 done
+
+# Sample WebM clip used by test/webm_test.dart (Big Buck Bunny, ~1MB).
+WEBM_URL="https://test-videos.co.uk/vids/bigbuckbunny/webm/vp8/360/Big_Buck_Bunny_360_10s_1MB.webm"
+if [ ! -s sample.webm ]; then
+  echo "GET sample.webm"
+  curl -fsSL "$WEBM_URL" -o sample.webm || { echo "FAIL sample.webm"; rm -f sample.webm; }
+fi
 echo "done."

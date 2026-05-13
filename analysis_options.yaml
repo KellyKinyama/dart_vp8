@@ -1,6 +1,16 @@
 include: package:lints/recommended.yaml
 
 analyzer:
+  exclude:
+    # Diagnostic / scratch tools — not part of the published API.
+    # bin/bench.dart is the only published entry point.
+    - bin/diagnose.dart
+    - bin/diff_*.dart
+    - bin/dump_*.dart
+    - bin/probe*.dart
+    - bin/probe_*.dart
+    - bin/predict_*.dart
+    - bin/idct_check.dart
   language:
     strict-casts: true
     strict-inference: true

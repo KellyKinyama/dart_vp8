@@ -8,3 +8,8 @@ build/
 
 # Compiled bench / probe binaries.
 bin/*.exe
+
+# Large test fixtures (re-download via tool/fetch_vectors.sh).
+test/fixtures/*.webm
+test/fixtures/*.ivf
+test/fixtures/*.ivf.md5

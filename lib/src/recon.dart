@@ -534,9 +534,9 @@ void _interPredictUv8x8({
   final int rowBase = uvBorder + mbRow * 8;
   final int colBase = uvBorder + mbCol * 8;
   int loRow = -(rowBase - 2);
-  int hiRow = bufRows - 1 - 10 - rowBase;
+  final int hiRow = bufRows - 1 - 10 - rowBase;
   int loCol = -(colBase - 2);
-  int hiCol = refStride - 1 - 10 - colBase;
+  final int hiCol = refStride - 1 - 10 - colBase;
   if (intRow < loRow) intRow = loRow;
   if (intRow > hiRow) intRow = hiRow;
   if (intCol < loCol) intCol = loCol;

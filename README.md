@@ -34,8 +34,8 @@ Plus 14 robustness tests covering malformed / truncated / corrupt input.
   token-partition (1 / 2 / 4 / 8), full segmentation with per-segment
   Q / LF deltas, normal + simple loop filter at all sharpness levels,
   hidden reference frames (`show_frame=0`).
-- Includes a minimal IVF demuxer (the container `libvpx`'s test harness
-  uses); BYO container for anything else (e.g. WebM).
+- Includes a minimal IVF demuxer and a WebM/Matroska demuxer (V_VP8
+  video tracks); use `Vp8Reader` to auto-detect either container.
 - Library imports only `dart:typed_data` — runs on the VM, AOT, and
   Flutter Web.
 
@@ -67,14 +67,15 @@ import 'dart:typed_data';
 import 'package:dart_vp8/dart_vp8.dart';
 
 void main(List<String> args) {
-  final bytes = File(args.single).readAsBytesSync();
-  final reader = IvfReader(Uint8List.fromList(bytes));
+  final bytes = Uint8List.fromList(File(args.single).readAsBytesSync());
+  // Auto-detects IVF (.ivf) or WebM (.webm) from the magic bytes.
+  final reader = Vp8Reader(bytes);
   final decoder = Vp8Decoder();
 
   while (true) {
-    final frame = reader.nextFrame();
-    if (frame == null) break;
-    final out = decoder.decode(frame);
+    final pkt = reader.nextPacket();
+    if (pkt == null) break;
+    final out = decoder.decodeBytes(pkt.data);
     if (!out.isShown) continue; // hidden / alt-ref reference
 
     // out.y, out.u, out.v are Uint8List planes at strides
@@ -93,7 +94,9 @@ need to keep them around.
 
 The high-level entry points live at the top of the library:
 
-- `IvfReader` / `IvfFrame` — parse and iterate the IVF container.
+- `Vp8Reader` / `Vp8Packet` — container-agnostic demuxer (IVF or WebM).
+- `IvfReader` / `IvfFrame` — IVF-only demuxer.
+- `WebmReader` / `WebmFrame` — WebM/Matroska V_VP8 demuxer.
 - `Vp8Decoder` — stateful decoder; one instance per stream.
 - `DecodedFrame` — decoded I420 output (Y, U, V planes + metadata).
 
@@ -130,7 +133,8 @@ dart compile exe bin/bench.dart -o bin/bench.exe
 
 - VP8 encoder.
 - VP9 / AV1 decoders.
-- WebM / MP4 demuxers (use a separate package).
+- MP4 demuxer (use a separate package — WebM is supported in-tree).
+- Audio decoding (Vorbis / Opus). The WebM demuxer ignores audio tracks.
 - Hardware acceleration / SIMD.
 - Real-time playback guarantees.
 

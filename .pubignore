@@ -1,0 +1,27 @@
+# Files excluded from `dart pub publish`.
+# .gitignore is normally inherited; defining .pubignore overrides it
+# completely, so we reproduce the relevant ignores here too.
+
+.dart_tool/
+build/
+pubspec.lock
+*.yuv
+*.nolf.yuv
+
+# Large test fixtures are downloaded by tool/fetch_vectors.sh.
+test/fixtures/*.ivf
+test/fixtures/*.ivf.md5
+test/fixtures/*.webm
+
+# Compiled artifacts.
+bin/*.exe
+
+# Diagnostic / scratch tools — not part of the published API. Only
+# bin/bench.dart is shipped as a runnable entry point.
+bin/diagnose.dart
+bin/diff_*.dart
+bin/dump_*.dart
+bin/probe*.dart
+bin/probe_*.dart
+bin/predict_*.dart
+bin/idct_check.dart
