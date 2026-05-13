@@ -1,9 +1,10 @@
 name: dart_vp8
 description: >-
   Pure-Dart VP8 video decoder (RFC 6386). Byte-exact on all 62 official VP8
-  conformance vectors. Includes IVF and WebM demuxers, no native code, no
+  conformance vectors. Includes IVF and WebM demuxers + WebM writer
+  (with Cues seeking and a streaming reader), no native code, no
   dart:io in the library — runs on VM, AOT and Web.
-version: 0.1.0
+version: 0.2.1
 repository: https://github.com/KellyKinyama/dart_vp8
 issue_tracker: https://github.com/KellyKinyama/dart_vp8/issues
 homepage: https://github.com/KellyKinyama/dart_vp8

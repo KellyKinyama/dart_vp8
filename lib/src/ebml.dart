@@ -95,6 +95,58 @@ class EbmlReader {
     return EbmlElement(id.value, size.value, payloadOffset);
   }
 
+  /// Streaming-friendly variant of [readElement]: returns null instead
+  /// of throwing if either the header or the payload would extend past
+  /// the end of the currently-available buffer. Still throws for
+  /// genuinely malformed VINTs and unknown-size elements.
+  EbmlElement? tryReadElement(int offset) {
+    if (offset >= bytes.length) return null;
+    // Check ID VINT length is fully present.
+    final int first = bytes[offset];
+    if (first == 0) {
+      throw const FormatException('EBML: vint with no length marker');
+    }
+    int idLen = 1;
+    int mask = 0x80;
+    while ((first & mask) == 0) {
+      idLen++;
+      mask >>= 1;
+    }
+    if (idLen > 8) {
+      throw FormatException('EBML: vint length $idLen > 8');
+    }
+    if (offset + idLen > bytes.length) return null;
+    // Check size VINT length is fully present.
+    final int sizeOff = offset + idLen;
+    if (sizeOff >= bytes.length) return null;
+    final int sFirst = bytes[sizeOff];
+    if (sFirst == 0) {
+      throw const FormatException('EBML: vint with no length marker');
+    }
+    int sLen = 1;
+    int sMask = 0x80;
+    while ((sFirst & sMask) == 0) {
+      sLen++;
+      sMask >>= 1;
+    }
+    if (sLen > 8) {
+      throw FormatException('EBML: vint length $sLen > 8');
+    }
+    if (sizeOff + sLen > bytes.length) return null;
+    // Decode size to know the full element extent.
+    final int sizeMaxForLen = (1 << (7 * sLen)) - 1;
+    int sizeVal = sFirst & (sMask - 1);
+    for (int i = 1; i < sLen; i++) {
+      sizeVal = (sizeVal << 8) | bytes[sizeOff + i];
+    }
+    if (sizeVal == sizeMaxForLen) {
+      throw const FormatException('EBML: unknown-size elements not supported');
+    }
+    final int payloadOff = sizeOff + sLen;
+    if (payloadOff + sizeVal > bytes.length) return null;
+    return readElement(offset);
+  }
+
   /// Read a payload as an unsigned big-endian integer (1..8 bytes).
   /// Per the spec, an empty payload represents 0.
   int readUint(EbmlElement e) {

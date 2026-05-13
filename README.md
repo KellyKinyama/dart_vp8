@@ -34,8 +34,10 @@ Plus 14 robustness tests covering malformed / truncated / corrupt input.
   token-partition (1 / 2 / 4 / 8), full segmentation with per-segment
   Q / LF deltas, normal + simple loop filter at all sharpness levels,
   hidden reference frames (`show_frame=0`).
-- Includes a minimal IVF demuxer and a WebM/Matroska demuxer (V_VP8
-  video tracks); use `Vp8Reader` to auto-detect either container.
+- Includes a minimal IVF demuxer, a WebM/Matroska demuxer (V_VP8
+  video tracks) with `Cues`-based seeking, a streaming WebM reader for
+  chunked input, and a `WebmWriter` for muxing raw VP8 frames into
+  `.webm` files. Use `Vp8Reader` to auto-detect IVF or WebM.
 - Library imports only `dart:typed_data` — runs on the VM, AOT, and
   Flutter Web.
 
@@ -96,7 +98,10 @@ The high-level entry points live at the top of the library:
 
 - `Vp8Reader` / `Vp8Packet` — container-agnostic demuxer (IVF or WebM).
 - `IvfReader` / `IvfFrame` — IVF-only demuxer.
-- `WebmReader` / `WebmFrame` — WebM/Matroska V_VP8 demuxer.
+- `WebmReader` / `WebmFrame` / `WebmTrack` — WebM/Matroska V_VP8
+  demuxer with `seekToTime`.
+- `WebmStreamReader` — incremental WebM reader for chunked input.
+- `WebmWriter` — mux a sequence of VP8 frames into a `.webm` file.
 - `Vp8Decoder` — stateful decoder; one instance per stream.
 - `DecodedFrame` — decoded I420 output (Y, U, V planes + metadata).
 
