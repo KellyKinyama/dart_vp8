@@ -102,4 +102,14 @@ class BoolDecoder {
       i = v;
     }
   }
+
+  /// Debug helpers: snapshot/restore for non-destructive peeking.
+  int get debugValue => _value;
+  int get debugRange => _range;
+  int get debugBitCount => _bitCount;
+  int get debugBufPos => _bufPos;
+  List<int> debugSnapshot() => [_value, _range, _bitCount, _bufPos, _error ? 1 : 0];
+  void debugRestore(List<int> s) {
+    _value = s[0]; _range = s[1]; _bitCount = s[2]; _bufPos = s[3]; _error = s[4] != 0;
+  }
 }

@@ -569,6 +569,7 @@ void reconstructMbInter({
   required int yStride,
   required int uvStride,
   required bool useBilinear,
+
   /// VP8 version=3 sets `xd->fullpixel_mask = ~7`, which masks the chroma
   /// motion vector to a multiple of 8 (full-pixel only) after derivation.
   required bool useFullPixel,

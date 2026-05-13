@@ -225,6 +225,22 @@ class Vp8Decoder {
             eCtx.left[k] = 0;
           }
         } else {
+          // DEBUG: dump bool state + next 64 bits at start of MB token decode.
+          final int dbgMb = int.tryParse(
+                  Platform.environment['DART_DUMP_BD'] ?? '') ??
+              -1;
+          if (dbgMb == _globalMbIdx) {
+            final snap = tokBc.debugSnapshot();
+            final sb = StringBuffer();
+            for (int i = 0; i < 64; i++) {
+              sb.write(tokBc.read(128));
+            }
+            tokBc.debugRestore(snap);
+            stderr.writeln('DBD pre mb=$_globalMbIdx value=${snap[0]} '
+                'range=${snap[1]} bitCount=${snap[2]} bufPos=${snap[3]} '
+                'nextbits=$sb');
+          }
+          debugTraceTokens = (dbgMb == _globalMbIdx);
           final int eobTotal = decodeMbTokens(
             bc: tokBc,
             coefProbs: coefProbs,
@@ -233,7 +249,7 @@ class Vp8Decoder {
             qcoeff: qcoeff,
             eobs: eobs,
           );
-          // Record the maximum eob across all blocks of this MB. Y2 is
+          debugTraceTokens = false;
           // at index 24 only when !is4x4 (the MB uses the 2nd-stage WHT).
           int m = 0;
           final int last = mb.is4x4 ? 24 : 25;
@@ -312,16 +328,28 @@ class Vp8Decoder {
     _updateReferenceBuffers(header);
 
     // Phase 6: commit / discard entropy updates.
-    //   * Keyframe: the in-header probs are parsed starting from VP8
-    //     defaults and become the new persistent state.
-    //   * Inter frame with `refresh_entropy_probs`: commit the (possibly
-    //     updated) frame-local probs to the persistent state.
-    //   * Inter frame without it: discard the local probs (the persistent
-    //     state remains untouched, so no action needed).
-    if (header.isKeyFrame || header.refreshEntropyProbs) {
+    //
+    // libvpx semantics: at the *start* of a key frame, fc.coef_probs
+    // (and the mode/MV/UV-mode probs) are reset to the VP8 defaults
+    // (`vp8_default_coef_probs`, `vp8_init_mbmode_probs`). The frame's
+    // header may then apply delta updates in place. At the *end* of the
+    // frame, if `refresh_entropy_probs == 0`, those updates are reverted
+    // (libvpx: `pc->fc = pc->lfc;`).
+    //
+    //   * Inter frame, refresh=1  : commit the updated probs.
+    //   * Inter frame, refresh=0  : keep persistent state untouched.
+    //   * Key frame,  refresh=1  : commit (defaults + KF updates).
+    //   * Key frame,  refresh=0  : reset persistent state to defaults
+    //                              (the KF updates were applied locally
+    //                              for *this* frame's tokens but must
+    //                              not persist).
+    if (header.refreshEntropyProbs) {
       _entropy.commitFrom(header);
+    } else if (header.isKeyFrame) {
+      _entropy.resetToDefaults();
+      // LF deltas still persist across frames (set unconditionally).
+      _entropy.commitLfFrom(header);
     } else {
-      // LF deltas always persist across frames (libvpx semantics).
       _entropy.commitLfFrom(header);
     }
     // Segmentation feature data + absDelta also persist across frames; the

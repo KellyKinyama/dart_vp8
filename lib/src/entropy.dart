@@ -21,6 +21,9 @@ import 'dart:typed_data';
 import 'bool_decoder.dart';
 import 'constants/coef_probs.dart';
 
+/// DEBUG: when true, [decodeMbTokens] prints per-block context/state.
+bool debugTraceTokens = false;
+
 /// Coefficient band of zigzag position n (0..15) plus a sentinel at 16.
 /// Matches libvpx's `kBands` in detokenize.c.
 const List<int> _kBands = <int>[
@@ -239,6 +242,9 @@ int decodeMbTokens({
     final int aIdx = i & 3;
     final int lIdx = (i & 0xc) >> 2;
     final int ctx = above[aIdx] + left[lIdx];
+    if (debugTraceTokens) {
+      print('  Y$i ctx=$ctx (above[$aIdx]=${above[aIdx]} left[$lIdx]=${left[lIdx]}) bd=${bc.debugSnapshot()} prob[3][0][$ctx][0]=${coefProbs[coefProbIndex(3, 0, ctx, 0)]}');
+    }
     final int nz = _decodeBlockCoeffs(
       bc,
       coefProbs,
