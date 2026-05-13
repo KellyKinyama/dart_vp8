@@ -193,25 +193,17 @@ class Vp8Decoder {
       // residual partitions).
       final BoolDecoder tokBc = tokBcs[r % numParts];
       // Reset left context at the start of each row.
-      for (int i = 0; i < 9; i++) {
-        eCtx.left[i] = 0;
-      }
+      eCtx.left.fillRange(0, 9, 0);
       for (int c = 0; c < _mbCols; c++) {
         final mb = mi[r * _mbCols + c];
 
         // Copy this column's above context in.
         final Uint8List ab = aboveRow.sliceFor(c);
-        for (int i = 0; i < 9; i++) {
-          eCtx.above[i] = ab[i];
-        }
+        eCtx.above.setRange(0, 9, ab);
 
         // Reset coefficients/eobs for this MB.
-        for (int i = 0; i < qcoeff.length; i++) {
-          qcoeff[i] = 0;
-        }
-        for (int i = 0; i < eobs.length; i++) {
-          eobs[i] = 0;
-        }
+        qcoeff.fillRange(0, qcoeff.length, 0);
+        eobs.fillRange(0, eobs.length, 0);
 
         if (mb.skipCoeff) {
           mb.eobMax = 0;
@@ -261,9 +253,7 @@ class Vp8Decoder {
         }
 
         // Save updated above context back to the row.
-        for (int i = 0; i < 9; i++) {
-          ab[i] = eCtx.above[i];
-        }
+        ab.setRange(0, 9, eCtx.above);
 
         final DequantSet dq = segDq[mb.segmentId];
 

@@ -6,3 +6,5 @@ build/
 *.yuv
 *.nolf.yuv
 
+# Compiled bench / probe binaries.
+bin/*.exe
