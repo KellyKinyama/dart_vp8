@@ -52,6 +52,17 @@ int _clip8(int v) => v < 0 ? 0 : (v > 255 ? 255 : v);
 // `stepIsRow == true` means pixel_step = `srcStride` (vertical filter
 // reused as a "horizontal" pass via swapped step); for the standard
 // sixtap_predict, the first pass has pixel_step=1 (horizontal).
+//
+// SIMD note: an Float32x4 4-wide variant of this pass was prototyped but
+// proved *slower* than the scalar form in Dart AOT — each
+// `Float32x4(d0, d1, d2, d3)` constructed from gathered byte→double
+// conversions allocates an unboxed-but-unhoistable temporary that the
+// AOT pipeline does not eliminate, and the int→double→int round-trip on
+// every lane defeats the saved multiplies. Keep this loop scalar; it
+// compiles to a tight unboxed-int inner body and is hot enough that any
+// regression dominates total decode time. (See `inverseWalsh4x4` for the
+// path where SIMD does pay off: pure 4-wide additive butterfly on
+// Int32x4 with no per-pixel gather.)
 void _sixtapFirstPass({
   required Uint8List src,
   required int srcOff,
@@ -62,16 +73,22 @@ void _sixtapFirstPass({
   required List<int> filter,
   required Int32List out,
 }) {
+  final int f0 = filter[0];
+  final int f1 = filter[1];
+  final int f2 = filter[2];
+  final int f3 = filter[3];
+  final int f4 = filter[4];
+  final int f5 = filter[5];
   int sp = srcOff;
   int op = 0;
   for (int i = 0; i < outputHeight; i++) {
     for (int j = 0; j < outputWidth; j++) {
-      int t = src[sp - 2 * pixelStep] * filter[0] +
-          src[sp - 1 * pixelStep] * filter[1] +
-          src[sp] * filter[2] +
-          src[sp + pixelStep] * filter[3] +
-          src[sp + 2 * pixelStep] * filter[4] +
-          src[sp + 3 * pixelStep] * filter[5] +
+      int t = src[sp - 2 * pixelStep] * f0 +
+          src[sp - 1 * pixelStep] * f1 +
+          src[sp] * f2 +
+          src[sp + pixelStep] * f3 +
+          src[sp + 2 * pixelStep] * f4 +
+          src[sp + 3 * pixelStep] * f5 +
           _filterRound;
       t = t >> _filterShift;
       out[op + j] = _clip8(t);
@@ -85,6 +102,7 @@ void _sixtapFirstPass({
 // 6-tap vertical pass. Reads `src[-2..3] * pixelStep` along the step axis,
 // then writes clamped byte output. `srcStride` is the temp-buffer stride
 // (per libvpx this equals `outputWidth` when wiring the two passes).
+// See `_sixtapFirstPass` for the SIMD note.
 void _sixtapSecondPass({
   required Int32List src,
   required int srcOff,
@@ -97,16 +115,22 @@ void _sixtapSecondPass({
   required int dstOff,
   required int dstStride,
 }) {
+  final int f0 = filter[0];
+  final int f1 = filter[1];
+  final int f2 = filter[2];
+  final int f3 = filter[3];
+  final int f4 = filter[4];
+  final int f5 = filter[5];
   int sp = srcOff;
   int dp = dstOff;
   for (int i = 0; i < outputHeight; i++) {
     for (int j = 0; j < outputWidth; j++) {
-      int t = src[sp - 2 * pixelStep] * filter[0] +
-          src[sp - 1 * pixelStep] * filter[1] +
-          src[sp] * filter[2] +
-          src[sp + pixelStep] * filter[3] +
-          src[sp + 2 * pixelStep] * filter[4] +
-          src[sp + 3 * pixelStep] * filter[5] +
+      int t = src[sp - 2 * pixelStep] * f0 +
+          src[sp - 1 * pixelStep] * f1 +
+          src[sp] * f2 +
+          src[sp + pixelStep] * f3 +
+          src[sp + 2 * pixelStep] * f4 +
+          src[sp + 3 * pixelStep] * f5 +
           _filterRound;
       t = t >> _filterShift;
       dst[dp + j] = _clip8(t);
@@ -231,6 +255,11 @@ void sixtapPredict16x16(Uint8List src, int srcOff, int srcStride, int xoffset,
 
 // ---------------------------------------------------------------------------
 // Bilinear (2-tap) filter.
+//
+// See the SIMD note on `_sixtapFirstPass`: the same regression applies here
+// — Dart AOT does not eliminate the per-iteration `Float32x4(...)` gather,
+// so the scalar form (which JIT/AOT compiles to a tight unboxed-int inner
+// body) is faster in practice.
 
 void _bilinearFirstPass({
   required Uint8List src,
@@ -241,13 +270,14 @@ void _bilinearFirstPass({
   required List<int> filter,
   required Uint16List out,
 }) {
+  final int f0 = filter[0];
+  final int f1 = filter[1];
   int sp = srcOff;
   int op = 0;
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       final int t =
-          (src[sp] * filter[0] + src[sp + 1] * filter[1] + _filterRound) >>
-              _filterShift;
+          (src[sp] * f0 + src[sp + 1] * f1 + _filterRound) >> _filterShift;
       out[op + j] = t;
       sp++;
     }
@@ -266,13 +296,14 @@ void _bilinearSecondPass({
   required int dstOff,
   required int dstStride,
 }) {
+  final int f0 = filter[0];
+  final int f1 = filter[1];
   int sp = srcOff;
   int dp = dstOff;
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       final int t =
-          (src[sp] * filter[0] + src[sp + width] * filter[1] + _filterRound) >>
-              _filterShift;
+          (src[sp] * f0 + src[sp + width] * f1 + _filterRound) >> _filterShift;
       dst[dp + j] = t;
       sp++;
     }
